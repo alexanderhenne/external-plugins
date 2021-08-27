@@ -42,6 +42,7 @@ import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
+import net.runelite.api.NPCComposition;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameStateChanged;
@@ -175,6 +176,14 @@ public class MonkeyMetricsPlugin extends Plugin
 
 		for (NPC npc : client.getNpcs())
 		{
+			final NPCComposition composition = npc.getTransformedComposition();
+			if (composition == null)
+				continue;
+
+			final String name = composition.getName();
+			if (!name.equals("Maniacal monkey") && !name.equals("Skeleton") && !name.equals("Dust devil"))
+				continue;
+
 			final LocalPoint location = LocalPoint.fromWorld(client, npc.getWorldLocation());
 
 			npcStacks.put(location, npcStacks.getOrDefault(location, 0) + 1);
