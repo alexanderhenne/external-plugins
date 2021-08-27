@@ -89,7 +89,7 @@ public class AttackMetricsOverlay extends Overlay
 		{
 			panelComponent.getChildren().add(
 				LineComponent.builder()
-					.left("Waiting for NPC damage..")
+					.left("Monkey Metrics plugin waiting for NPC damage..")
 					.build());
 		}
 
