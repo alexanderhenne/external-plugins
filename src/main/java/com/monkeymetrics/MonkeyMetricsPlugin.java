@@ -181,7 +181,8 @@ public class MonkeyMetricsPlugin extends Plugin
 				continue;
 
 			final String name = composition.getName();
-			if (!name.equals("Maniacal monkey") && !name.equals("Skeleton") && !name.equals("Dust devil"))
+			if (!name.equals("Maniacal monkey") && !name.equals("Skeleton")
+					&& !name.equals("Dust devil") && !name.equals("Abyssal demon"))
 				continue;
 
 			final LocalPoint location = LocalPoint.fromWorld(client, npc.getWorldLocation());
