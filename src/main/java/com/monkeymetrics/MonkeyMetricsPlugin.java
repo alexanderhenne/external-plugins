@@ -57,7 +57,6 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -70,14 +69,32 @@ public class MonkeyMetricsPlugin extends Plugin
 
 	private static final Set<Skill> SKILLS_TO_TRACK = ImmutableSet.of(Skill.RANGED, Skill.MAGIC);
 
+	private static final Set<String> allowedNpcNames = ImmutableSet.of(
+		"Maniacal monkey",
+		"Skeleton",
+		"Dust devil",
+		"Abyssal demon",
+		"Greater abyssal demon",
+		"Greater Nechryael",
+		"Nechryarch",
+		"Smoke devil",
+		"Choke devil",
+		"Nuclear smoke devil",
+		"Warped Jelly",
+		"Vitreous warped Jelly",
+		"Ankou",
+		"Dagannoth",
+		"TzHaar-Hur",
+		"TzHaar-Mej",
+		"TzHaar-Ket",
+		"TzHaar-Xil"
+	);
+
 	@Inject
 	private Client client;
 
 	@Inject
 	private OverlayManager overlayManager;
-
-	@Inject
-	private InfoBoxManager infoBoxManager;
 
 	@Inject
 	private ItemManager itemManager;
@@ -93,9 +110,6 @@ public class MonkeyMetricsPlugin extends Plugin
 
 	private AttackMetrics metrics = new AttackMetrics();
 	private Map<Skill, Integer> cachedExp = new HashMap<>();
-
-	private NecklaceInfoBox necklaceInfoBox;
-	private int lastAmuletItemId;
 
 	@Override
 	protected void startUp() throws Exception
@@ -145,11 +159,6 @@ public class MonkeyMetricsPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		if (config.showNecklaceInfoBox())
-		{
-			updateNecklaceInfoBox();
-		}
-
 		if (config.showNpcStacks())
 		{
 			updateNpcStacks();
@@ -158,15 +167,6 @@ public class MonkeyMetricsPlugin extends Plugin
 		if (config.showMetrics())
 		{
 			updateMetrics();
-		}
-	}
-
-	private void updateNecklaceInfoBox()
-	{
-		if (necklaceInfoBox != null && necklaceInfoBox.isDone())
-		{
-			infoBoxManager.removeInfoBox(necklaceInfoBox);
-			necklaceInfoBox = null;
 		}
 	}
 
@@ -181,8 +181,7 @@ public class MonkeyMetricsPlugin extends Plugin
 				continue;
 
 			final String name = composition.getName();
-			if (!name.equals("Maniacal monkey") && !name.equals("Skeleton")
-					&& !name.equals("Dust devil") && !name.equals("Abyssal demon"))
+			if (!allowedNpcNames.contains(name))
 				continue;
 
 			final LocalPoint location = LocalPoint.fromWorld(client, npc.getWorldLocation());
@@ -243,53 +242,6 @@ public class MonkeyMetricsPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
-	{
-		if (!config.showNecklaceInfoBox()
-			|| event.getItemContainer() != client.getItemContainer(InventoryID.EQUIPMENT))
-		{
-			return;
-		}
-
-		int amuletItemId = getAmuletItemId();
-
-		if (amuletItemId != lastAmuletItemId)
-		{
-			infoBoxManager.removeInfoBox(necklaceInfoBox);
-			necklaceInfoBox = null;
-
-			// Display an infobox ticking down until the necklace is active.
-			if (amuletItemId == ItemID.BONECRUSHER_NECKLACE)
-			{
-				final BufferedImage image = itemManager.getImage(ItemID.BONECRUSHER_NECKLACE);
-				necklaceInfoBox = new NecklaceInfoBox(image, this, client);
-				infoBoxManager.addInfoBox(necklaceInfoBox);
-			}
-
-			lastAmuletItemId = amuletItemId;
-		}
-	}
-
-	private int getAmuletItemId()
-	{
-		ItemContainer itemContainer = client.getItemContainer(InventoryID.EQUIPMENT);
-
-		if (itemContainer == null)
-		{
-			return -1;
-		}
-
-		final Item[] items = itemContainer.getItems();
-
-		if (items.length < EquipmentInventorySlot.AMULET.getSlotIdx())
-		{
-			return -1;
-		}
-
-		return items[EquipmentInventorySlot.AMULET.getSlotIdx()].getId();
-	}
-
-	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
 		final GameState state = event.getGameState();
@@ -317,14 +269,8 @@ public class MonkeyMetricsPlugin extends Plugin
 		cachedExp.clear();
 		metricsOverlay.setMetrics(null);
 
-		infoBoxManager.removeInfoBox(necklaceInfoBox);
-		necklaceInfoBox = null;
-		lastAmuletItemId = -1;
-
 		if (client.getLocalPlayer() != null)
 		{
-			lastAmuletItemId = getAmuletItemId();
-
 			for (Skill skill : SKILLS_TO_TRACK)
 			{
 				cachedExp.put(skill, client.getSkillExperience(skill));

@@ -43,17 +43,6 @@ public interface MonkeyMetricsConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "showNecklaceInfoBox",
-		name = "Necklace Activation",
-		description = "Shows an infobox counting down until the Bonecrusher necklace is activated.",
-		position = 1
-	)
-	default boolean showNecklaceInfoBox()
-	{
-		return true;
-	}
-
-	@ConfigItem(
 		keyName = "showNpcStacks",
 		name = "NPC Stacks",
 		description = "Shows how many NPCs are stacked together on a single tile.",
