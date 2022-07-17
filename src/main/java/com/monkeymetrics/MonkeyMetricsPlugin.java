@@ -70,6 +70,13 @@ public class MonkeyMetricsPlugin extends Plugin
 
 	private static final Set<Skill> SKILLS_TO_TRACK = ImmutableSet.of(Skill.RANGED, Skill.MAGIC);
 
+	private static final Set<String> allowedNpcNames = ImmutableSet.of(
+		"Maniacal monkey",
+		"Skeleton",
+		"Dust devil",
+		"Abyssal demon"
+	);
+
 	@Inject
 	private Client client;
 
@@ -181,8 +188,7 @@ public class MonkeyMetricsPlugin extends Plugin
 				continue;
 
 			final String name = composition.getName();
-			if (!name.equals("Maniacal monkey") && !name.equals("Skeleton")
-					&& !name.equals("Dust devil") && !name.equals("Abyssal demon"))
+			if (!allowedNpcNames.contains(name))
 				continue;
 
 			final LocalPoint location = LocalPoint.fromWorld(client, npc.getWorldLocation());
