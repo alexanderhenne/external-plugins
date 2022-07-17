@@ -115,9 +115,6 @@ private static final Set<String> allowedNpcNames = ImmutableSet.of(
 	private AttackMetrics metrics = new AttackMetrics();
 	private Map<Skill, Integer> cachedExp = new HashMap<>();
 
-	private NecklaceInfoBox necklaceInfoBox;
-	private int lastAmuletItemId;
-
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -166,11 +163,6 @@ private static final Set<String> allowedNpcNames = ImmutableSet.of(
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		if (config.showNecklaceInfoBox())
-		{
-			updateNecklaceInfoBox();
-		}
-
 		if (config.showNpcStacks())
 		{
 			updateNpcStacks();
@@ -179,15 +171,6 @@ private static final Set<String> allowedNpcNames = ImmutableSet.of(
 		if (config.showMetrics())
 		{
 			updateMetrics();
-		}
-	}
-
-	private void updateNecklaceInfoBox()
-	{
-		if (necklaceInfoBox != null && necklaceInfoBox.isDone())
-		{
-			infoBoxManager.removeInfoBox(necklaceInfoBox);
-			necklaceInfoBox = null;
 		}
 	}
 
@@ -263,53 +246,6 @@ private static final Set<String> allowedNpcNames = ImmutableSet.of(
 	}
 
 	@Subscribe
-	public void onItemContainerChanged(ItemContainerChanged event)
-	{
-		if (!config.showNecklaceInfoBox()
-			|| event.getItemContainer() != client.getItemContainer(InventoryID.EQUIPMENT))
-		{
-			return;
-		}
-
-		int amuletItemId = getAmuletItemId();
-
-		if (amuletItemId != lastAmuletItemId)
-		{
-			infoBoxManager.removeInfoBox(necklaceInfoBox);
-			necklaceInfoBox = null;
-
-			// Display an infobox ticking down until the necklace is active.
-			if (amuletItemId == ItemID.BONECRUSHER_NECKLACE)
-			{
-				final BufferedImage image = itemManager.getImage(ItemID.BONECRUSHER_NECKLACE);
-				necklaceInfoBox = new NecklaceInfoBox(image, this, client);
-				infoBoxManager.addInfoBox(necklaceInfoBox);
-			}
-
-			lastAmuletItemId = amuletItemId;
-		}
-	}
-
-	private int getAmuletItemId()
-	{
-		ItemContainer itemContainer = client.getItemContainer(InventoryID.EQUIPMENT);
-
-		if (itemContainer == null)
-		{
-			return -1;
-		}
-
-		final Item[] items = itemContainer.getItems();
-
-		if (items.length < EquipmentInventorySlot.AMULET.getSlotIdx())
-		{
-			return -1;
-		}
-
-		return items[EquipmentInventorySlot.AMULET.getSlotIdx()].getId();
-	}
-
-	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
 		final GameState state = event.getGameState();
@@ -337,14 +273,8 @@ private static final Set<String> allowedNpcNames = ImmutableSet.of(
 		cachedExp.clear();
 		metricsOverlay.setMetrics(null);
 
-		infoBoxManager.removeInfoBox(necklaceInfoBox);
-		necklaceInfoBox = null;
-		lastAmuletItemId = -1;
-
 		if (client.getLocalPlayer() != null)
 		{
-			lastAmuletItemId = getAmuletItemId();
-
 			for (Skill skill : SKILLS_TO_TRACK)
 			{
 				cachedExp.put(skill, client.getSkillExperience(skill));
