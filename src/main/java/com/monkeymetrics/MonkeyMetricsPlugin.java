@@ -70,12 +70,26 @@ public class MonkeyMetricsPlugin extends Plugin
 
 	private static final Set<Skill> SKILLS_TO_TRACK = ImmutableSet.of(Skill.RANGED, Skill.MAGIC);
 
-	private static final Set<String> allowedNpcNames = ImmutableSet.of(
-		"Maniacal monkey",
-		"Skeleton",
-		"Dust devil",
-		"Abyssal demon"
-	);
+private static final Set<String> allowedNpcNames = ImmutableSet.of(
+	"Maniacal monkey",
+	"Skeleton",
+	"Dust devil",
+	"Abyssal demon",
+	"Greater abyssal demon",
+	"Greater Nechryael",
+	"Nechryarch",
+	"Smoke devil",
+	"Choke devil",
+	"Nuclear smoke devil",
+	"Warped Jelly",
+	"Vitreous warped Jelly",
+	"Ankou",
+	"Dagannoth",
+	"TzHaar-Hur",
+	"TzHaar-Mej",
+	"TzHaar-Ket",
+	"TzHaar-Xil"
+);
 
 	@Inject
 	private Client client;
