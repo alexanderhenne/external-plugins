@@ -41,7 +41,7 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 
 public class NpcStacksOverlay extends Overlay
 {
-	private static final int OFFSET_Z = 20;
+	private static final int OFFSET_Z = -10;
 
 	private final MonkeyMetricsConfig config;
 
@@ -83,8 +83,9 @@ public class NpcStacksOverlay extends Overlay
 				return;
 			}
 
+			final Point adjTextPoint = new Point(textPoint.getX(), textPoint.getY() + 12);
 			OverlayUtil.renderPolygon(graphics, polygon, new Color(255, 255, 255, 100));
-			OverlayUtil.renderTextLocation(graphics, textPoint, text, Color.ORANGE);
+			OverlayUtil.renderTextLocation(graphics, adjTextPoint, text, Color.ORANGE);
 		}));
 
 		return null;
