@@ -57,7 +57,6 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -70,35 +69,32 @@ public class MonkeyMetricsPlugin extends Plugin
 
 	private static final Set<Skill> SKILLS_TO_TRACK = ImmutableSet.of(Skill.RANGED, Skill.MAGIC);
 
-private static final Set<String> allowedNpcNames = ImmutableSet.of(
-	"Maniacal monkey",
-	"Skeleton",
-	"Dust devil",
-	"Abyssal demon",
-	"Greater abyssal demon",
-	"Greater Nechryael",
-	"Nechryarch",
-	"Smoke devil",
-	"Choke devil",
-	"Nuclear smoke devil",
-	"Warped Jelly",
-	"Vitreous warped Jelly",
-	"Ankou",
-	"Dagannoth",
-	"TzHaar-Hur",
-	"TzHaar-Mej",
-	"TzHaar-Ket",
-	"TzHaar-Xil"
-);
+	private static final Set<String> allowedNpcNames = ImmutableSet.of(
+		"Maniacal monkey",
+		"Skeleton",
+		"Dust devil",
+		"Abyssal demon",
+		"Greater abyssal demon",
+		"Greater Nechryael",
+		"Nechryarch",
+		"Smoke devil",
+		"Choke devil",
+		"Nuclear smoke devil",
+		"Warped Jelly",
+		"Vitreous warped Jelly",
+		"Ankou",
+		"Dagannoth",
+		"TzHaar-Hur",
+		"TzHaar-Mej",
+		"TzHaar-Ket",
+		"TzHaar-Xil"
+	);
 
 	@Inject
 	private Client client;
 
 	@Inject
 	private OverlayManager overlayManager;
-
-	@Inject
-	private InfoBoxManager infoBoxManager;
 
 	@Inject
 	private ItemManager itemManager;
