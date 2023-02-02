@@ -63,7 +63,7 @@ public class NpcStacksOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (npcStacks == null || !config.showMetrics())
+		if (npcStacks == null || !config.showNpcStacks())
 		{
 		   return null;
 		}
