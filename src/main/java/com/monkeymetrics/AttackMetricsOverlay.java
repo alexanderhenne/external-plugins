@@ -27,6 +27,9 @@ package com.monkeymetrics;
 import com.google.inject.Inject;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import lombok.AccessLevel;
+import lombok.Setter;
+import net.runelite.api.Skill;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -38,19 +41,27 @@ public class AttackMetricsOverlay extends Overlay
 
 	private final PanelComponent panelComponent = new PanelComponent();
 
+	@Setter(AccessLevel.PACKAGE)
 	private AttackMetrics metrics;
+	private final MonkeyMetricsPlugin plugin;
 
 	@Inject
 	AttackMetricsOverlay(MonkeyMetricsPlugin monkeyMetricsPlugin, MonkeyMetricsConfig config)
 	{
 		super(monkeyMetricsPlugin);
+		this.plugin = monkeyMetricsPlugin;
 		this.config = config;
 	}
 
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!config.showMetrics())
+		// If Metrics overlay disabled,
+		// metrics are null and timeout is enabled
+		// or metrics are marked inactive.
+		if (!config.showMetrics()
+			|| (metrics == null && config.overlayTimeout() != 0)
+			|| !metrics.isActive())
 		{
 			return null;
 		}
@@ -76,14 +87,7 @@ public class AttackMetricsOverlay extends Overlay
 					.right(metrics.getDamage() + " hp")
 					.build());
 
-			metrics.getGainedExp().forEach((skill, exp) ->
-			{
-				panelComponent.getChildren().add(
-					LineComponent.builder()
-						.left(skill.getName())
-						.right("+" + exp + " xp")
-						.build());
-			});
+			metrics.getGainedExp().forEach(this::appendActiveStyle);
 		}
 		else
 		{
@@ -96,8 +100,25 @@ public class AttackMetricsOverlay extends Overlay
 		return panelComponent.render(graphics);
 	}
 
-	public void setMetrics(AttackMetrics metrics)
+	private void appendActiveStyle(Skill skill, Integer exp)
 	{
-		this.metrics = metrics;
+		int timeout = config.attackStyleTimeout();
+		// Check if the setting is enabled, and check if no XP was gained last tick
+		if (timeout != 0 && exp == 0)
+		{
+			// Get how many game ticks since last attack
+			int ticks = plugin.getTicksSinceExpDrop().getOrDefault(skill, -1);
+			// If skill has not been tracked, or ticks since last attack >= timeout
+			if (ticks == -1 || ticks >= timeout)
+			{
+				return;
+			}
+		}
+
+		panelComponent.getChildren().add(
+			LineComponent.builder()
+				.left(skill.getName())
+				.right("+" + exp + " xp")
+				.build());
 	}
 }

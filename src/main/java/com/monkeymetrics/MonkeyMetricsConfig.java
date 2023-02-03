@@ -27,6 +27,7 @@ package com.monkeymetrics;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.Units;
 
 @ConfigGroup(MonkeyMetricsPlugin.CONFIG_KEY)
 public interface MonkeyMetricsConfig extends Config
@@ -63,4 +64,29 @@ public interface MonkeyMetricsConfig extends Config
 	{
 		return 2;
 	}
+
+	@ConfigItem(
+		position = 4,
+		keyName = "overlayTimeout",
+		name = "Overlay timeout",
+		description = "The time until the overlay is hidden (0 = always visible)"
+	)
+	@Units(Units.MINUTES)
+	default int overlayTimeout()
+	{
+		return 2;
+	}
+
+	@ConfigItem(
+		position = 5,
+		keyName = "attackStyleTimeout",
+		name = "Hide attack style",
+		description = "The time until an attack style expires (0 = Always visible)"
+	)
+	@Units(Units.TICKS)
+	default int attackStyleTimeout()
+	{
+		return 10;
+	}
+
 }
