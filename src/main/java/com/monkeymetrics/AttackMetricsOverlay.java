@@ -56,6 +56,9 @@ public class AttackMetricsOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
+		// If Metrics overlay disabled,
+		// metrics are null and timeout is enabled
+		// or metrics are marked inactive.
 		if (!config.showMetrics()
 			|| (metrics == null && config.overlayTimeout() != 0)
 			|| !metrics.isActive())
@@ -84,7 +87,7 @@ public class AttackMetricsOverlay extends Overlay
 					.right(metrics.getDamage() + " hp")
 					.build());
 
-			metrics.getGainedExp().forEach(this::addActiveStyle);
+			metrics.getGainedExp().forEach(this::appendActiveStyle);
 		}
 		else
 		{
@@ -97,18 +100,21 @@ public class AttackMetricsOverlay extends Overlay
 		return panelComponent.render(graphics);
 	}
 
-	private void addActiveStyle(Skill skill, Integer exp)
+	private void appendActiveStyle(Skill skill, Integer exp)
 	{
 		int timeout = config.attackStyleTimeout();
-		// check whether timed out, if setting active and exp last tick was 0
+		// Check if the setting is enabled, and check if no XP was gained last tick
 		if (timeout != 0 && exp == 0)
 		{
-			int ticks = plugin.getTicksSinceExp().getOrDefault(skill, -1);
+			// Get how many game ticks since last attack
+			int ticks = plugin.getTicksSinceExpDrop().getOrDefault(skill, -1);
+			// If skill has not been tracked, or ticks since last attack >= timeout
 			if (ticks == -1 || ticks >= timeout)
 			{
 				return;
 			}
 		}
+
 		panelComponent.getChildren().add(
 			LineComponent.builder()
 				.left(skill.getName())

@@ -41,5 +41,5 @@ public class AttackMetrics
 	private final Map<Skill, Integer> gainedExp = new HashMap<>();
 
 	@Nullable
-	private Instant lastAttackAction;
+	private Instant lastAttack;
 }

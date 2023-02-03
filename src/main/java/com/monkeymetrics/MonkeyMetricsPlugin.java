@@ -110,7 +110,7 @@ public class MonkeyMetricsPlugin extends Plugin
 	private final Map<Skill, Integer> cachedExp = new HashMap<>();
 
 	@Getter(AccessLevel.PACKAGE)
-	private final Map<Skill, Integer> ticksSinceExp = new HashMap<>();
+	private final Map<Skill, Integer> ticksSinceExpDrop = new HashMap<>();
 
 	@Override
 	protected void startUp() throws Exception
@@ -159,7 +159,7 @@ public class MonkeyMetricsPlugin extends Plugin
 		// Update this value if upwards of one hitsplat has been generated this tick
 		if (hitsplats == 2 && config.overlayTimeout() != 0)
 		{
-			metrics.setLastAttackAction(Instant.now());
+			metrics.setLastAttack(Instant.now());
 		}
 	}
 
@@ -203,21 +203,23 @@ public class MonkeyMetricsPlugin extends Plugin
 	}
 
 	private void updateActivityState() {
-		// Always active
+		// 0 = Always active
 		if (config.overlayTimeout() == 0)
 		{
 			metrics.setActive(true);
 			return;
 		}
 
-		Duration overlayTimeout = Duration.ofMinutes(config.overlayTimeout());
-		Instant lastAttack = metrics.getLastAttackAction();
 
+		Instant lastAttack = metrics.getLastAttack();
+
+		// No attack action recorded.
 		if (lastAttack == null) {
 			metrics.setActive(false);
 			return;
 		}
 
+		Duration overlayTimeout = Duration.ofMinutes(config.overlayTimeout());
 		Duration sinceAttacked = Duration.between(lastAttack, Instant.now());
 		if (sinceAttacked.compareTo(overlayTimeout) >= 0)
 		{
@@ -231,11 +233,12 @@ public class MonkeyMetricsPlugin extends Plugin
 	private void updateMetrics()
 	{
 		final int timeout = config.attackStyleTimeout();
-		// 0 = never timeout
+		// 0 = never timeout, so no need to track ticks if so.
 		if (timeout != 0)
 		{
-			ticksSinceExp.forEach((skill, ticks) -> {
-				if (ticks <= timeout) ticksSinceExp.put(skill, ticks + 1);
+			ticksSinceExpDrop.forEach((skill, ticks) -> {
+				// Don't increment beyond the timeout amount.
+				if (ticks < timeout) ticksSinceExpDrop.put(skill, ticks + 1);
 			});
 		}
 
@@ -243,14 +246,14 @@ public class MonkeyMetricsPlugin extends Plugin
 		// Only update metrics overlay if we've attacked a target.
 		if (metrics.getHitsplats() == 0)
 		{
-			// Hide overlay if inactive before returning
+			// Unless metrics is now set to inactive.
 			if (!active) metricsOverlay.setMetrics(null);
 			return;
 		}
 
 		final AttackMetrics oldMetrics = this.metrics;
 
-		// Hide overlay if inactive
+		// Hide overlay if inactive.
 		metricsOverlay.setMetrics(
 			active ? oldMetrics : null
 		);
@@ -258,11 +261,13 @@ public class MonkeyMetricsPlugin extends Plugin
 		// Reset for the next tick.
 		metrics = new AttackMetrics();
 		metrics.setActive(oldMetrics.isActive());
-		if (config.overlayTimeout() != 0) metrics.setLastAttackAction(oldMetrics.getLastAttackAction());
 
 
 		// However, remember skills trained during previous ticks.
 		oldMetrics.getGainedExp().forEach((skill, exp) -> metrics.getGainedExp().put(skill, 0));
+		if (config.overlayTimeout() != 0) {
+			metrics.setLastAttack(oldMetrics.getLastAttack());
+		}
 	}
 
 	@Subscribe
@@ -291,8 +296,8 @@ public class MonkeyMetricsPlugin extends Plugin
 		}
 
 		cachedExp.put(skill, currentExp);
-		// set to 0 ticks since last action
-		ticksSinceExp.put(skill, 0);
+		// Reset to zero ticks since last attack action.
+		ticksSinceExpDrop.put(skill, 0);
 	}
 
 	@Subscribe
@@ -321,7 +326,7 @@ public class MonkeyMetricsPlugin extends Plugin
 
 		metrics = new AttackMetrics();
 		cachedExp.clear();
-		ticksSinceExp.clear();
+		ticksSinceExpDrop.clear();
 		metricsOverlay.setMetrics(null);
 
 		if (client.getLocalPlayer() != null)
