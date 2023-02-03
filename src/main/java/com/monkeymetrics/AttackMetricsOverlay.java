@@ -27,6 +27,9 @@ package com.monkeymetrics;
 import com.google.inject.Inject;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import lombok.AccessLevel;
+import lombok.Setter;
+import net.runelite.api.Skill;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -38,19 +41,24 @@ public class AttackMetricsOverlay extends Overlay
 
 	private final PanelComponent panelComponent = new PanelComponent();
 
+	@Setter(AccessLevel.PACKAGE)
 	private AttackMetrics metrics;
+	private final MonkeyMetricsPlugin plugin;
 
 	@Inject
 	AttackMetricsOverlay(MonkeyMetricsPlugin monkeyMetricsPlugin, MonkeyMetricsConfig config)
 	{
 		super(monkeyMetricsPlugin);
+		this.plugin = monkeyMetricsPlugin;
 		this.config = config;
 	}
 
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!config.showMetrics())
+		if (!config.showMetrics()
+			|| (metrics == null && config.overlayTimeout() != 0)
+			|| !metrics.isActive())
 		{
 			return null;
 		}
@@ -76,14 +84,7 @@ public class AttackMetricsOverlay extends Overlay
 					.right(metrics.getDamage() + " hp")
 					.build());
 
-			metrics.getGainedExp().forEach((skill, exp) ->
-			{
-				panelComponent.getChildren().add(
-					LineComponent.builder()
-						.left(skill.getName())
-						.right("+" + exp + " xp")
-						.build());
-			});
+			metrics.getGainedExp().forEach(this::addActiveStyle);
 		}
 		else
 		{
@@ -96,8 +97,22 @@ public class AttackMetricsOverlay extends Overlay
 		return panelComponent.render(graphics);
 	}
 
-	public void setMetrics(AttackMetrics metrics)
+	private void addActiveStyle(Skill skill, Integer exp)
 	{
-		this.metrics = metrics;
+		int timeout = config.attackStyleTimeout();
+		// check whether timed out, if setting active and exp last tick was 0
+		if (timeout != 0 && exp == 0)
+		{
+			int ticks = plugin.getTicksSinceExp().getOrDefault(skill, -1);
+			if (ticks == -1 || ticks >= timeout)
+			{
+				return;
+			}
+		}
+		panelComponent.getChildren().add(
+			LineComponent.builder()
+				.left(skill.getName())
+				.right("+" + exp + " xp")
+				.build());
 	}
 }

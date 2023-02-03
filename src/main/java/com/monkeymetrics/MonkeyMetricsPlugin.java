@@ -26,21 +26,19 @@ package com.monkeymetrics;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
-import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.GameState;
 import net.runelite.api.Hitsplat;
-import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.Skill;
@@ -48,7 +46,6 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -108,8 +105,12 @@ public class MonkeyMetricsPlugin extends Plugin
 	@Inject
 	private MonkeyMetricsConfig config;
 
+	@Getter(AccessLevel.PACKAGE)
 	private AttackMetrics metrics = new AttackMetrics();
-	private Map<Skill, Integer> cachedExp = new HashMap<>();
+	private final Map<Skill, Integer> cachedExp = new HashMap<>();
+
+	@Getter(AccessLevel.PACKAGE)
+	private final Map<Skill, Integer> ticksSinceExp = new HashMap<>();
 
 	@Override
 	protected void startUp() throws Exception
@@ -151,8 +152,15 @@ public class MonkeyMetricsPlugin extends Plugin
 			return;
 		}
 
-		metrics.setHitsplats(metrics.getHitsplats() + 1);
+		int hitsplats = metrics.getHitsplats() + 1;
+
+		metrics.setHitsplats(hitsplats);
 		metrics.setDamage(metrics.getDamage() + hitsplat.getAmount());
+		// Update this value if upwards of one hitsplat has been generated this tick
+		if (hitsplats == 2 && config.overlayTimeout() != 0)
+		{
+			metrics.setLastAttackAction(Instant.now());
+		}
 	}
 
 	@Subscribe
@@ -165,6 +173,7 @@ public class MonkeyMetricsPlugin extends Plugin
 
 		if (config.showMetrics())
 		{
+			updateActivityState();
 			updateMetrics();
 		}
 	}
@@ -193,20 +202,64 @@ public class MonkeyMetricsPlugin extends Plugin
 		stacksOverlay.setNpcStacks(npcStacks);
 	}
 
+	private void updateActivityState() {
+		// Always active
+		if (config.overlayTimeout() == 0)
+		{
+			metrics.setActive(true);
+			return;
+		}
+
+		Duration overlayTimeout = Duration.ofMinutes(config.overlayTimeout());
+		Instant lastAttack = metrics.getLastAttackAction();
+
+		if (lastAttack == null) {
+			metrics.setActive(false);
+			return;
+		}
+
+		Duration sinceAttacked = Duration.between(lastAttack, Instant.now());
+		if (sinceAttacked.compareTo(overlayTimeout) >= 0)
+		{
+			metrics.setActive(false);
+			return;
+		}
+
+		metrics.setActive(true);
+	}
+
 	private void updateMetrics()
 	{
+		final int timeout = config.attackStyleTimeout();
+		// 0 = never timeout
+		if (timeout != 0)
+		{
+			ticksSinceExp.forEach((skill, ticks) -> {
+				if (ticks <= timeout) ticksSinceExp.put(skill, ticks + 1);
+			});
+		}
+
+		boolean active = metrics.isActive();
 		// Only update metrics overlay if we've attacked a target.
 		if (metrics.getHitsplats() == 0)
 		{
+			// Hide overlay if inactive before returning
+			if (!active) metricsOverlay.setMetrics(null);
 			return;
 		}
 
 		final AttackMetrics oldMetrics = this.metrics;
 
-		metricsOverlay.setMetrics(oldMetrics);
+		// Hide overlay if inactive
+		metricsOverlay.setMetrics(
+			active ? oldMetrics : null
+		);
 
 		// Reset for the next tick.
 		metrics = new AttackMetrics();
+		metrics.setActive(oldMetrics.isActive());
+		if (config.overlayTimeout() != 0) metrics.setLastAttackAction(oldMetrics.getLastAttackAction());
+
 
 		// However, remember skills trained during previous ticks.
 		oldMetrics.getGainedExp().forEach((skill, exp) -> metrics.getGainedExp().put(skill, 0));
@@ -238,6 +291,8 @@ public class MonkeyMetricsPlugin extends Plugin
 		}
 
 		cachedExp.put(skill, currentExp);
+		// set to 0 ticks since last action
+		ticksSinceExp.put(skill, 0);
 	}
 
 	@Subscribe
@@ -266,6 +321,7 @@ public class MonkeyMetricsPlugin extends Plugin
 
 		metrics = new AttackMetrics();
 		cachedExp.clear();
+		ticksSinceExp.clear();
 		metricsOverlay.setMetrics(null);
 
 		if (client.getLocalPlayer() != null)
