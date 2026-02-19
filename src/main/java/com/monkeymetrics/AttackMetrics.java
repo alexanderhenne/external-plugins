@@ -24,15 +24,22 @@
  */
 package com.monkeymetrics;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import javax.annotation.Nullable;
 import lombok.Data;
 import net.runelite.api.Skill;
 
 @Data
 public class AttackMetrics
 {
-    private int hitsplats = 0;
-    private int damage = 0;
-    private final Map<Skill, Integer> gainedExp = new HashMap<>();
+	private boolean active = false;
+
+	private int hitsplats = 0;
+	private int damage = 0;
+	private final Map<Skill, Integer> gainedExp = new HashMap<>();
+
+	@Nullable
+	private Instant lastAttack;
 }
