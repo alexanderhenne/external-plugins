@@ -87,7 +87,10 @@ public class MonkeyMetricsPlugin extends Plugin
 		"TzHaar-Hur",
 		"TzHaar-Mej",
 		"TzHaar-Ket",
-		"TzHaar-Xil"
+		"TzHaar-Xil",
+		"Harpie Bug Swarm",
+		"Araxyte",
+		"Dreadborn Araxyte"
 	);
 
 	@Inject
